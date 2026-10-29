@@ -1,6 +1,6 @@
 // @vitest-environment jsdom
 import { afterEach, beforeEach, expect, it, vi } from 'vitest'
-import { cleanup, render } from '@testing-library/svelte'
+import { cleanup, fireEvent, render } from '@testing-library/svelte'
 import Home from '../../src/views/Home.svelte'
 import type { PublicBookmark, PublicCategory, PublicSettings } from '../../shared/types'
 
@@ -41,6 +41,37 @@ const emptyRoot: PublicCategory = { id: 1, parent_id: null, title: 'EmptyRoot', 
 const childA: PublicCategory = { id: 2, parent_id: 1, title: 'ChildA', icon: null, sort: 0 }
 const childB: PublicCategory = { id: 3, parent_id: 1, title: 'ChildB', icon: null, sort: 1 }
 const EMPTY_TEXT = '这个分类下暂时还没有可展示的书签。'
+
+it('顶部搜索只提交搜索引擎，输入关键词不筛选分类或经常访问', async () => {
+  const settings = {
+    most_visited_count: 8,
+    search_engine: {
+      current: 'Google',
+      engines: [{ name: 'Google', icon: '', url_template: 'https://www.google.com/search?q={q}' }],
+    },
+  } as unknown as PublicSettings
+  const open = vi.spyOn(window, 'open').mockReturnValue(null)
+  const { container } = render(Home, { props: {
+    categories: [emptyRoot],
+    bookmarks: [bm(10, 1, 'First Bookmark', 5), bm(11, 1, 'Other Bookmark')],
+    settings,
+  } })
+  const input = container.querySelector<HTMLInputElement>('input[type="search"]')!
+  await fireEvent.input(input, { target: { value: '完全不匹配 & search' } })
+  // 等过原有筛选防抖时间，确认页面仍保持原分类和常用书签。
+  await new Promise((resolve) => setTimeout(resolve, 180))
+  const panel = container.querySelector('#home-category-panel-1')
+  expect(panel?.textContent).toContain('First Bookmark')
+  expect(panel?.textContent).toContain('Other Bookmark')
+  expect(container.querySelector('.search-results')).toBeNull()
+  expect(container.textContent).toContain('经常访问')
+  await fireEvent.submit(input.closest('form')!)
+  expect(open).toHaveBeenCalledWith(
+    `https://www.google.com/search?q=${encodeURIComponent('完全不匹配 & search')}`,
+    '_blank',
+    'noopener,noreferrer',
+  )
+})
 
 it('空一级默认展示排序第一的二级分类，不跨分类聚合其它书签', () => {
   const bookmarks = [bm(10, 2, 'First Child Bookmark', 0), bm(11, 3, 'Other Child Bookmark', 5)]

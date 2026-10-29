@@ -101,7 +101,7 @@
     onOpenSearch = undefined,
   }: Props = $props()
 
-  // HomeHeroSearch 以 `bind:query` 写回。
+  // 顶部输入仅用于外部搜索，不回写首页书签筛选词。
   let searchQuery = $state('')
   let deferredSearchQuery = $state('')
   let searchFilterTimer: ReturnType<typeof setTimeout> | null = null
@@ -529,7 +529,7 @@
     {siteTitleFontSize}
     {settings}
     topNavigation={isTopNavigation}
-    bind:query={searchQuery}
+    query={searchQuery}
   />
 
   <Sidebar
