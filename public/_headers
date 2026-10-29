@@ -7,6 +7,9 @@
 /icon.png
   Cache-Control: public, max-age=86400
 
+/background.webp
+  Cache-Control: public, max-age=86400
+
 /manifest.webmanifest
   Cache-Control: public, max-age=86400
 
