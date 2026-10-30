@@ -73,7 +73,8 @@ describe('BookmarkCustomIconField', () => {
     expect(input.value).toBe('⭐ star')
     expect(document.querySelector('.icon-preview-text')?.textContent).toBe('⭐ st')
     expect(document.querySelector('.icon-preview img')).toBeNull()
-    expect(screen.queryByRole('button')).toBeNull()
+    expect(screen.getByRole('button', { name: '上传图片' })).toBeDefined()
+    expect(screen.queryByRole('button', { name: '打开图床 ↗' })).toBeNull()
     expect(document.querySelector('.field-error')).toBeNull()
 
     await fireEvent.input(input, { target: { value: 'https://x.test/a.png' } })
@@ -106,7 +107,7 @@ describe('BookmarkCustomIconField', () => {
     expect(document.querySelector('.field-error')).toBeNull()
 
     await view.rerender({ form, imageHostUrl: '', onOpenImageHost })
-    expect(screen.queryByRole('button')).toBeNull()
+    expect(screen.queryByRole('button', { name: '打开图床 ↗' })).toBeNull()
   })
 })
 

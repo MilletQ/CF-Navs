@@ -27,6 +27,17 @@ function version(sqlite: ReturnType<typeof createSqliteD1>['sqlite']) {
 }
 
 describe('bookmark image version database boundary', () => {
+  it('本地图片随书签保存到数据库，刷新缓存和修改标题后仍保留', async () => {
+    const { db, id } = await seeded()
+    const icon = iconFixture('blue').dataUri
+    const payload = { category_id: 1, title: 'Uploaded', url: 'https://example.com', icon, icon_source: 'custom' as const }
+    await updateBookmark(db, id, payload)
+    expect((await getBookmarkIconData(db, id))?.icon).toBe(icon)
+    await cacheBookmarkIconBlob(db, id, icon, 'custom')
+    await updateBookmark(db, id, { ...payload, title: 'Renamed' })
+    expect((await getBookmarkIconData(db, id))?.icon_blob).toBe(icon)
+  })
+
   it('打开编辑触发刷新时保留仅有导入图片、没有外链的图标', async () => {
     const { db, id } = await seeded()
     await updateBookmark(db, id, { category_id: 1, title: 'Imported', url: 'https://example.com', icon: null, icon_source: 'custom' })

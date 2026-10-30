@@ -17,9 +17,11 @@
     iconifyName?: string
     imageHostUrl?: string
     loading?: boolean
+    uploading?: boolean
     faviconError?: string
     onIconInput?: (value: string) => AsyncVoid
     onOpenImageHost?: () => AsyncVoid
+    onUpload?: (file: File) => AsyncVoid
   }
 
   let {
@@ -27,13 +29,23 @@
     iconifyName = '',
     imageHostUrl = '',
     loading = false,
+    uploading = false,
     faviconError = '',
     onIconInput,
     onOpenImageHost,
+    onUpload,
   }: Props = $props()
 
   const previewIcon = $derived(getFormIconPreviewUrl(form, iconifyName))
   const previewUrl = $derived(withIconAccessKey(previewIcon, $iconAccessKey))
+  let fileInput: HTMLInputElement
+
+  function handleFileChange(event: Event) {
+    const input = event.currentTarget as HTMLInputElement
+    const file = input.files?.[0]
+    input.value = ''
+    if (file) void onUpload?.(file)
+  }
 
   function handleIconInput(event: Event) {
     const nextIcon = (event.currentTarget as HTMLInputElement).value
@@ -45,14 +57,17 @@
   }
 </script>
 
-<label class="field-wide">
-  <span>自定义图标 / 手动输入</span>
+<div class="field-wide">
+  <label for="bookmark-custom-icon">自定义图标 / 手动输入</label>
+  <input bind:this={fileInput} type="file" hidden aria-label="上传本地图标" accept="image/png,image/jpeg,image/webp,image/svg+xml" onchange={handleFileChange} disabled={loading || uploading} />
   <div class="icon-row">
     <input
-      value={form.icon}
+      id="bookmark-custom-icon"
+      value={form.icon.startsWith('data:image/') ? '' : form.icon}
       type="text"
-      placeholder="图标 URL / 表情，如 ⭐"
+      placeholder={form.icon.startsWith('data:image/') ? '已选择本地图片，可重新上传替换' : '图标 URL / 表情，如 ⭐'}
       oninput={handleIconInput}
+      disabled={loading || uploading}
     />
     {#if canPreviewIcon(previewIcon)}
       <span class="icon-preview" title="图标预览">
@@ -63,6 +78,9 @@
         {/if}
       </span>
     {/if}
+    <button type="button" class="ghost-button upload-button" disabled={loading || uploading} onclick={() => fileInput.click()}>
+      {uploading ? '处理图片中…' : '上传图片'}
+    </button>
     {#if imageHostUrl}
       <button
         type="button"
@@ -75,10 +93,11 @@
       </button>
     {/if}
   </div>
+  <small class="upload-hint" aria-live="polite">{uploading ? '正在本机拉伸并压缩图片…' : 'PNG、JPG、WebP、SVG，最大 10 MB；自动拉伸为 256×256 并压缩，点击保存后存入本站，无需图床。'}</small>
   {#if faviconError}
     <small class="field-error">{faviconError}</small>
   {/if}
-</label>
+</div>
 
 <style>
   .field-wide {
@@ -92,7 +111,7 @@
 
   .icon-row {
     display: grid;
-    grid-template-columns: minmax(0, 1fr) max-content max-content;
+    grid-template-columns: minmax(0, 1fr) repeat(3, max-content);
     gap: 6px;
     align-items: center;
   }
@@ -173,6 +192,12 @@
     color: #dc2626;
     font-size: 12px;
     line-height: 1.35;
+  }
+
+  .upload-hint {
+    color: #64748b;
+    font-size: 12px;
+    line-height: 1.5;
   }
 
   @media (max-width: 500px) {

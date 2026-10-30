@@ -43,6 +43,7 @@
   } from '../lib/bookmarkIconifyController'
   import BookmarkBaseFields from './BookmarkBaseFields.svelte'
   import BookmarkCustomIconField from './BookmarkCustomIconField.svelte'
+  import { prepareLocalIcon } from '../lib/localIconUpload'
   import BookmarkIconCandidatePicker from './BookmarkIconCandidatePicker.svelte'
   import BookmarkModalActions from './BookmarkModalActions.svelte'
   import BookmarkModalHeader from './BookmarkModalHeader.svelte'
@@ -84,6 +85,8 @@
   // 只在下面的副作用里比较，不进模板。
   let formKey = ''
   let faviconError = $state('')
+  let uploadingIcon = $state(false)
+  let iconUploadRequestId = 0
   let selectedLogoSchemeName = $state(DEFAULT_LOGO_SURF_SCHEME.name)
   let iconifyName = $state('')
   let iconifyUseConfirmed = $state(false)
@@ -109,6 +112,8 @@
     untrack(() => {
       if (key === formKey) return
       formKey = key
+      iconUploadRequestId++
+      uploadingIcon = false
       faviconError = ''
       candidateError = ''
       const fallbackCategoryId = categories[0]?.id
@@ -346,8 +351,28 @@
     window.open(`${base}/upload`, '_blank', 'noopener,noreferrer')
   }
 
+  async function uploadLocalIcon(file: File) {
+    const requestId = ++iconUploadRequestId
+    const targetForm = form
+    const originalIcon = form.icon
+    const originalSource = form.icon_source
+    uploadingIcon = true
+    faviconError = ''
+    try {
+      const icon = await prepareLocalIcon(file)
+      // 切换书签或主动选择其他图标后，丢弃旧的处理结果。
+      if (requestId !== iconUploadRequestId || form !== targetForm || form.icon !== originalIcon || form.icon_source !== originalSource) return
+      markCustomIconInput(icon)
+    } catch (error) {
+      if (requestId === iconUploadRequestId) faviconError = getErrorMessage(error)
+    } finally {
+      if (requestId === iconUploadRequestId) uploadingIcon = false
+    }
+  }
+
   async function handleSubmit(event: SubmitEvent) {
     event.preventDefault()
+    if (uploadingIcon) return
     await onSubmit?.(buildBookmarkSubmitPayload(form, iconifyName))
   }
 
@@ -364,6 +389,7 @@
   }
 
   onDestroy(() => {
+    iconUploadRequestId++
     clearIconifySearchTimer()
     setPageScrollLocked(false)
   })
@@ -442,6 +468,8 @@
           {imageHostUrl}
           {loading}
           {faviconError}
+          uploading={uploadingIcon}
+          onUpload={uploadLocalIcon}
           onIconInput={markCustomIconInput}
           onOpenImageHost={openImageHost}
         />
@@ -456,7 +484,7 @@
           canDelete={Boolean(onDelete)}
           {loading}
           {deleting}
-          saveDisabled={loading || deleting || categories.length === 0 || !form.title.trim() || !form.url.trim()}
+          saveDisabled={loading || deleting || uploadingIcon || categories.length === 0 || !form.title.trim() || !form.url.trim()}
           onCancel={handleCancel}
           onDelete={handleDelete}
         />
