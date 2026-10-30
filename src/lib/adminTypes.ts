@@ -14,6 +14,8 @@ export type CategoryFormValue = {
 }
 
 export type BookmarkFormValue = {
+  /** 编辑时的已存图片预览，不作为图标地址提交。 */
+  icon_preview?: string
   id?: string | number
   category_id?: string | number
   title: string

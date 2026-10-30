@@ -2,6 +2,7 @@
 
 <script lang="ts">
   import type { BookmarkFormValue } from '../lib/adminTypes'
+  import { iconAccessKey, withIconAccessKey } from '../lib/iconAccessKey'
   import {
     canPreviewIcon,
     canPreviewIconAsImage,
@@ -31,6 +32,9 @@
     onOpenImageHost,
   }: Props = $props()
 
+  const previewIcon = $derived(getFormIconPreviewUrl(form, iconifyName))
+  const previewUrl = $derived(withIconAccessKey(previewIcon, $iconAccessKey))
+
   function handleIconInput(event: Event) {
     const nextIcon = (event.currentTarget as HTMLInputElement).value
     void onIconInput?.(nextIcon)
@@ -50,10 +54,10 @@
       placeholder="图标 URL / 表情，如 ⭐"
       oninput={handleIconInput}
     />
-    {#if form.icon && canPreviewIcon(form.icon)}
+    {#if canPreviewIcon(previewIcon)}
       <span class="icon-preview" title="图标预览">
-        {#if canPreviewIconAsImage(form.icon)}
-          <img src={getFormIconPreviewUrl(form, iconifyName)} alt="图标预览" />
+        {#if canPreviewIconAsImage(previewIcon)}
+          <img src={previewUrl} alt="图标预览" />
         {:else}
           <span class="icon-preview-text">{getTextIconPreview(form.icon)}</span>
         {/if}

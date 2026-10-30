@@ -9,6 +9,7 @@ import type {
 import { normalizeBookmarkUrl } from '../../shared/urlPolicy'
 import type { BookmarkFormValue, CategoryFormValue } from './adminTypes'
 import { iconifyIcon } from './icons'
+import { getBookmarkIconUrl } from './bookmarkIconDisplay'
 
 export function toCategoryPayload(form: CategoryFormValue): CategoryUpsertReq {
   const icon = form.icon.trim()
@@ -51,6 +52,9 @@ export function toCategoryForm(category: Category): CategoryFormValue {
 
 export function toBookmarkForm(bookmark: Bookmark | PublicBookmark): BookmarkFormValue {
   return {
+    ...(!bookmark.icon && (bookmark.icon_blob || bookmark.icon_cached || bookmark.icon_display === 'image')
+      ? { icon_preview: getBookmarkIconUrl(bookmark) }
+      : {}),
     id: bookmark.id,
     category_id: bookmark.category_id,
     title: bookmark.title,

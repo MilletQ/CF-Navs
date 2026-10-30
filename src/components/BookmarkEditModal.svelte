@@ -332,6 +332,7 @@
   }
 
   function markCustomIconInput(nextIcon: string) {
+    form.icon_preview = ''
     form.icon = nextIcon
     form.icon_source = ''
     iconifyName = ''

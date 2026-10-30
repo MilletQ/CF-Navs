@@ -6,6 +6,7 @@ import { createBookmark, getBookmarkIconData, setIconBlob, updateBookmark } from
 import { ensureSchema } from '../../worker/lib/db/schema'
 import { BOOKMARK_ICON_TRIGGERS, INITIALIZE_ICON_DATASET_SQL } from '../../worker/lib/db/iconSchema'
 import { importData } from '../../worker/lib/db/import'
+import { cacheBookmarkIconBlob } from '../../worker/lib/bookmarkIconCache'
 
 const schema = readFileSync(new URL('../../schema.sql', import.meta.url), 'utf8')
 const open: ReturnType<typeof createSqliteD1>[] = []
@@ -26,6 +27,14 @@ function version(sqlite: ReturnType<typeof createSqliteD1>['sqlite']) {
 }
 
 describe('bookmark image version database boundary', () => {
+  it('打开编辑触发刷新时保留仅有导入图片、没有外链的图标', async () => {
+    const { db, id } = await seeded()
+    await updateBookmark(db, id, { category_id: 1, title: 'Imported', url: 'https://example.com', icon: null, icon_source: 'custom' })
+    await setIconBlob(db, id, iconFixture().dataUri, (await getBookmarkIconData(db, id))!)
+    await cacheBookmarkIconBlob(db, id, null, 'custom')
+    expect((await getBookmarkIconData(db, id))?.icon_blob).toBe(iconFixture().dataUri)
+  })
+
   it('stores image and revision together and preserves identity for equal bytes', async () => {
     const { db, sqlite, id } = await seeded()
     const expected = (await getBookmarkIconData(db, id))!

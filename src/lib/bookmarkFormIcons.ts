@@ -96,7 +96,7 @@ export function canPreviewIcon(icon: string): boolean {
 }
 
 export function canPreviewIconAsImage(icon: string): boolean {
-  return /^https?:\/\//i.test(icon) || /^data:image\//i.test(icon) || Boolean(iconifyProxyIcon(icon))
+  return /^https?:\/\//i.test(icon) || /^data:image\//i.test(icon) || /^\/api\/icon\/\d+(?:\?|$)/.test(icon) || Boolean(iconifyProxyIcon(icon))
 }
 
 export function getTextIconPreview(icon: string): string {
@@ -117,7 +117,7 @@ export function getFormIconPreviewUrl(form: BookmarkFormValue, iconifyName: stri
     return iconifyProxyIcon(iconifyNameFromUrl(form.icon) ?? iconifyName) || iconifyPreview
   }
 
-  return form.icon
+  return form.icon || form.icon_preview || ''
 }
 
 export function buildBookmarkSubmitPayload(form: BookmarkFormValue, iconifyName: string): BookmarkFormValue {
@@ -131,7 +131,7 @@ export function buildBookmarkSubmitPayload(form: BookmarkFormValue, iconifyName:
     ? submittedIconifyUrl
       ? 'iconify'
       : form.icon_source || 'custom'
-    : ''
+    : form.icon_preview ? form.icon_source : ''
 
   return {
     ...form,

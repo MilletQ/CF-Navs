@@ -22,6 +22,8 @@ export async function cacheBookmarkIconBlob(
   const expected = await getBookmarkIconData(db, bookmarkId, true)
   const unchanged = { iconBlob: null, reuseExisting: true, wrote: false }
   if (!expected || expected.icon !== (iconUrl ?? null) || expected.icon_source !== (iconSource ?? null)) return unchanged
+  // 导入图片可能只有 icon_blob；没有外链不代表应删除唯一原图。
+  if (!iconUrl?.trim()) return unchanged
   let blob: string | null = null
   if (iconUrl?.startsWith('data:image/')) {
     blob = iconUrl
